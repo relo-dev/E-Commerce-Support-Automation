@@ -1,58 +1,133 @@
-# Salesforce DX Project
+# E-Commerce Support Automation
 
-Salesforce DX is a development approach that brings source-driven development, team collaboration, and continuous integration to the Salesforce Platform. Instead of working directly in an org through a web browser, you work with metadata as source files in a local DX project, track changes in version control, and deploy through automated processes.
+An AI-powered customer support automation system built on Salesforce Service Cloud, combining **Agentforce** with **Salesforce Flow** to automate e-commerce refund requests with grounded error handling.
 
-This project template gets you started with the tools and structure you need to build Salesforce applications using source control, scratch orgs, and the Salesforce CLI.
+---
 
-## Prerequisites
+## Overview
 
-Before you start, make sure you have:
+The system enables support teams to handle refund operations through an Agentforce AI agent.
 
-- **Salesforce CLI** - Download from [developer.salesforce.com/tools/salesforcecli](https://developer.salesforce.com/tools/salesforcecli). See [Install Salesforce CLI](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_install_cli.htm) for details.
-- **VS Code with Salesforce Extension Pack** - See [Installation Instructions](https://developer.salesforce.com/docs/platform/sfvscode-extensions/guide/install.html) for details. Includes the Agentforce Vibes extension.
-- **A development org** - Sign up for a free Developer Edition org [here](https://developer.salesforce.com/signup).
-- **Dev Hub enabled** (optional, required to create scratch orgs) - You can enable Dev Hub in your development org under Setup > Dev Hub.  See [Provide Developers Access to Salesforce DX Tools](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_setup_dx_tools.htm).
+The agent analyzes user requests, collects the required information, invokes backend automation through Salesforce Flow, and responds based on the actual execution result.
 
-## Project Structure
+> **Key Principle:** The AI does not assume a refund succeeded. The backend Flow explicitly returns `isSuccess` and `errorMessage` to eliminate conversational hallucinations.
 
-Your DX project follows this structure:
+---
 
-- **`force-app/main/default/`** - Your metadata source files live in this default package directory. You can configure additional package directories in the `sfdx-project.json` file.
-- **`config/`** - Scratch org definitions and project settings
-- **`scripts/`** - Automation scripts for common tasks
-- **`sfdx-project.json`** - Project manifest that defines package directories, namespace, API version, and other project-level settings
+## Architecture
 
-See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm).
+```mermaid
+flowchart TD
+    User([Support User]) --> Agent[E-Commerce Support Agent]
+    Agent --> Subagent[Order Refunds and Returns]
+    Subagent --> Action[Process Refund Action]
+    Action --> Flow[Auto Process Customer Refund Request]
+    Flow --> CaseVal[(Case Validation & Update)]
+    CaseVal --> Result{Success or Error?}
+    Result -->|isSuccess = True| Success[Confirm Refund]
+    Result -->|isSuccess = False| Failure[Return Grounded Error]
+```
 
-## Get Started
+---
 
-Ready to start developing? The [Get Started with Salesforce DX](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_get_started_dx.htm) guide walks you through your first project, from creating a scratch org to creating a simple Apex class or LWC to deploying your code to a sandbox.
+## Key Features
 
-## Common Salesforce CLI Commands
+* **Agentforce AI Agent:** Handles support requests and routes refund-related tasks dynamically.
+* **Refund & Returns Subagent:** Dedicated subagent specialized in order returns and reimbursements.
+* **Flow Automation:** Validates Case records and deterministically updates refund attributes.
+* **Agent Action Integration:** Bridges conversational natural language parameters directly to the backend Flow.
+* **Grounded Error Handling:** Relies strictly on `isSuccess` and `errorMessage` variables to prevent false positive confirmations.
+* **Dual Interface:** Supports conversational execution via Agentforce and manual case-level operations via a Screen Flow.
 
-Here are common CLI commands that you'll use the most:
+---
 
-- `sf org login web`: Authorize an org
-- `sf org open`: Open your org in a browser
-- `sf org create scratch`: Create a scratch org
-- `sf project deploy start`: Deploy metadata to your org
-- `sf project retrieve start`: Retrieve metadata from your org
-- `sf template generate <artifact>`: Scaffold new components, such as Apex classes and triggers, LWC components, Lightning apps, and more
-- `sf apex <command>`: Run Apex tests, run anonymous Apex blocks, and view logs
-- `sf data <command>`: Work with test data
-- `sf alias <command>`: Manage org aliases
-- `sf config <command>`: Configure CLI settings
+## Salesforce Components
 
-## Use Agentforce Vibes to Build Lightning Apps
+| Component | Type | Purpose |
+| :--- | :--- | :--- |
+| **`E_Commerce_Support`** | Agentforce Agent | Top-level agent handling conversational orchestration and routing |
+| **`Order Refunds and Returns`** | Subagent | Domain-specific subagent dedicated to refund and return operations |
+| **`Process Refund`** | Agent Action | Action connecting conversational intent to backend Flow execution |
+| **`Auto Process Customer Refund Request`** | Autolaunched Flow | Backend automation engine running queries, validations, and updates |
+| **`Process Customer Refund Request`** | Screen Flow | Interactive UI embedded on the Case record page for direct processing |
+| **`Case_Record_Page`** | Lightning Page | Enhanced Case record interface with contextual variable integration |
 
-Transform your ideas into custom Lightning apps that extend CRM workflows directly in Lightning Experience. Through natural conversations with Agentforce Vibes, implement custom objects and fields, complex business logic, and dynamic UI components. See [Build a Lightning App Using Agentforce Vibes](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/lexapp-overview.html).
+---
 
-## Additional Resources
+## Case Fields
 
-- [Agentforce Vibes Developer Guide](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/einstein-overview.html)
-- [Salesforce CLI Installation Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/)
-- [Salesforce CLI Plugin Development Guide](https://developer.salesforce.com/docs/platform/salesforce-cli-plugin/guide/conceptual-overview.html)
-- [Salesforce VS Code Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
+* **`Order_ID__c`** *(Text)*: Stores the purchase order identifier.
+* **`Refund_Amount__c`** *(Currency)*: The monetary reimbursement value.
+* **`Return_Status__c`** *(Picklist)*: Tracks the status lifecycle (`Requested`, etc.).
+
+---
+
+## Error Handling
+
+```mermaid
+flowchart TD
+    GetCase[Query Case Record via recordId] --> CaseCheck{Does Record Exist?}
+    CaseCheck -->|Yes| UpdateRecord[Set Return_Status__c = Requested]
+    UpdateRecord --> AssignSuccess[Set isSuccess = True]
+    AssignSuccess --> AgentSuccess[Agentforce: Confirm Refund to User]
+    
+    CaseCheck -->|No| AssignFail[Set isSuccess = False & Return errorMessage]
+    AssignFail --> AgentFail[Agentforce: Grounded Error Response]
+```
+
+If the Case cannot be found, the backend Flow returns `isSuccess = False` alongside a granular `errorMessage`. The Agentforce agent grounds its response on this result rather than falsely assuming the refund succeeded.
+
+---
+
+## Screenshots
+
+<p align="center">
+  <b>Agentforce Architecture</b><br>
+  <img src="docs/images/agentforce-architecture.png" width="80%" />
+</p>
+
+---
+
+<p align="center">
+  <b>Refund Backend Flow</b><br>
+  <img src="docs/images/refund-backend-flow.png" width="80%" />
+</p>
+
+---
+
+<p align="center">
+  <b>Successful Refund Execution</b><br>
+  <img src="docs/images/agent-success-case.png" width="80%" />
+</p>
+
+---
+
+<p align="center">
+  <b>Failed Refund (Grounded Error Handling)</b><br>
+  <img src="docs/images/agent-error-case.png" width="80%" />
+</p>
+
+---
+
+<p align="center">
+  <b>Salesforce Case Interface</b><br>
+  <img src="docs/images/case-record-page.png" width="80%" />
+</p>
+
+---
+
+## Tech Stack
+
+* **Salesforce Service Cloud**
+* **Agentforce & Agentforce Builder**
+* **Salesforce Flow (Autolaunched & Screen Flow)**
+* **Salesforce DX (SFDX)**
+* **Git & GitHub**
+
+---
+
+## Scope
+
+* Built in a Salesforce Developer Edition environment using demo data.
+* No real customer data, live payment gateways, or banking integrations are used.
 
